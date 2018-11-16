@@ -1,0 +1,171 @@
+﻿
+@{
+    ViewData["Title"] = "Upload";
+}
+<form class="layui-form ok-form">
+    <div class="layui-form-item">
+        <label class="layui-form-label">教材</label>
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn" id="upload1">上传教材</button>
+            <input type="hidden" id="img_url" name="url" value="" />
+            <div class="layui-upload-list">
+                <p id="demoText"></p>
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">书名</label>
+        <div class="layui-input-inline">
+            <input type="text" name="caption" id="caption" placeholder="请输入书名" autocomplete="off" class="layui-input" lay-verify="required">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">年级</label>
+        <div class="layui-input-inline">
+            <select name="grade" lay-filter="grade" lay-verify="required" id="grade"></select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">学科</label>
+        <div class="layui-input-inline">
+            <select name="subject" lay-filter="subject" lay-verify="required" id="subject"></select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">出版社</label>
+        <div class="layui-input-inline">
+            <select name="publish" lay-filter="publish" lay-verify="required" id="publish"></select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">版本</label>
+        <div class="layui-input-inline">
+            <select name="edition" lay-filter="edition" lay-verify="required" id="edition"></select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button class="layui-btn" lay-submit="" lay-filter="add">立即提交</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+    </div>
+</form>
+
+<script>
+    layui.use(['form', 'layedit','upload'], function(){
+        var form = layui.form
+            , layer = layui.layer
+            , upload = layui.upload
+            , $ = layui.jquery;
+
+        $.ajax({
+            type: 'get',
+            url: '/TextBookApi/GetGrades',
+            dataType: 'json',
+            success: function (result) {
+                $("#grade").html("");
+                $.each(result.data, function (idx, val) {
+                    var option1 = $("<option>").val(val.id).text(val.caption);
+                    $("#grade").append($("<option>"));
+                    $("#grade").append(option1);
+                    form.render('select');
+                });
+            }
+        });
+
+        $.ajax({
+            type: 'get',
+            url: '/TextBookApi/GetSubjects',
+            dataType: 'json',
+            success: function (result) {
+                $("#subject").html("");
+                $.each(result.data, function (idx, val) {
+                    var option1 = $("<option>").val(val.id).text(val.caption);
+                    $("#subject").append($("<option>"));
+                    $("#subject").append(option1);
+                    form.render('select');
+                });
+            }
+        });
+
+        $.ajax({
+            type: 'get',
+            url: '/TextBookApi/GetPublishs',
+            dataType: 'json',
+            success: function (result) {
+                $("#publish").html("");
+                $.each(result.data, function (idx, val) {
+                    var option1 = $("<option>").val(val.id).text(val.caption);
+                    $("#publish").append($("<option>"));
+                    $("#publish").append(option1);
+                    form.render('select');
+                });
+            }
+        });
+
+        $.ajax({
+            type: 'get',
+            url: '/TextBookApi/GetEditions',
+            dataType: 'json',
+            success: function (result) {
+                $("#edition").html("");
+                $.each(result.data, function (idx, val) {
+                    var option1 = $("<option>").val(val.id).text(val.caption);
+                    $("#edition").append($("<option>"));
+                    $("#edition").append(option1);
+                    form.render('select');
+                });
+            }
+        });
+
+        var uploadInst = upload.render({
+            elem: '#upload1' //绑定元素
+            , url: '/TextBookApi/UploadFile' //上传接口
+            , accept: 'file'
+            , multiple: true
+            , before: function (obj) {
+
+            }
+            , done: function (res) {
+                //如果上传失败
+                if (res.code > 0) {
+                    return layer.msg('上传失败');
+                }
+                //上传成功
+                var demoText = $('#demoText');
+                demoText.html('<span">上传成功</span>');
+                document.getElementById("img_url").value = res.url;
+
+            }
+            , error: function () {
+                //演示失败状态，并实现重传
+                var demoText = $('#demoText');
+                demoText.html('<span style="color: #FF5722;">上传失败</span> <a class="layui-btn layui-btn-mini demo-reload">重试</a>');
+                demoText.find('.demo-reload').on('click', function () {
+                    uploadInst.upload();
+                });
+            }
+        });
+
+        form.on('submit(add)', function (data) {
+            $.ajax({
+                type: 'POST',
+                url: '/TextBookApi/UploadForm',
+                dataType: 'json',
+                data: data.field,//往后台发送的是data.field，即一个{name：value}的数据结构
+                async: true,
+                success: function (result) {
+                    if (result.code == 0) {
+                        layer.msg('保存成功', {icon: 1, time: 1000});
+                    } else {
+                        layer.msg('保存失败！' + result.msg, {icon: 2, time: 1000});
+                    }
+                },
+                error: function (result, type) {
+                    layer.msg('保存失败！', {icon: 2, time: 1000});
+                }
+            });
+            return false;
+        });
+    });
+</script>
